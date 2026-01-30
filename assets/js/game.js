@@ -34,7 +34,7 @@ class AudioManager {
     }
 
     loadSounds() {
-        this.sounds.jump = new Audio('/assets/mp3/jump.mp3');
+        this.sounds.jump = new Audio('/parkoreen/assets/mp3/jump.mp3');
         this.sounds.jump.volume = this.volume;
     }
 

@@ -140,7 +140,7 @@ class AuthManager {
 
     requireAuth() {
         if (!this.isLoggedIn()) {
-            window.location.href = '/login/';
+            window.location.href = '/parkoreen/login/';
             return false;
         }
         return true;
@@ -484,27 +484,27 @@ class SettingsManager {
 // ============================================
 const Navigation = {
     toDashboard() {
-        window.location.href = '/dashboard/';
+        window.location.href = '/parkoreen/dashboard/';
     },
     
     toEditor(mapId) {
-        window.location.href = `/host.html?map=${mapId}`;
+        window.location.href = `/parkoreen/host.html?map=${mapId}`;
     },
     
     toJoin() {
-        window.location.href = '/join.html';
+        window.location.href = '/parkoreen/join.html';
     },
     
     toSettings() {
-        window.location.href = '/settings/';
+        window.location.href = '/parkoreen/settings/';
     },
     
     toLogin() {
-        window.location.href = '/login/';
+        window.location.href = '/parkoreen/login/';
     },
     
     toSignup() {
-        window.location.href = '/signup/';
+        window.location.href = '/parkoreen/signup/';
     }
 };
 

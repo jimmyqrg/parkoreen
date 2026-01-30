@@ -540,11 +540,11 @@ a:hover {
 }
 
 .game-bg.sky {
-    background-image: url('../png/bg_sky.png');
+    background-image: url('/parkoreen/assets/png/bg_sky.png');
 }
 
 .game-bg.galaxy {
-    background-image: url('../png/bg_galaxy.png');
+    background-image: url('/parkoreen/assets/png/bg_galaxy.png');
 }
 
 /* ====================================

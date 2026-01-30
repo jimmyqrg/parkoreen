@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Parkoreen Dashboard - Manage your parkour maps">
     <title>Dashboard - Parkoreen</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/parkoreen/manifest.json">
     <meta name="theme-color" content="#2d5a27">
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/parkoreen/assets/css/style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,12 +63,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/runtime.js"></script>
-    <script src="/assets/js/style.js"></script>
+    <script src="/parkoreen/runtime.js"></script>
+    <script src="/parkoreen/assets/js/style.js"></script>
     <script>
         // Register service worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('/parkoreen/sw.js')
                 .then(reg => console.log('SW registered'))
                 .catch(err => console.log('SW registration failed:', err));
         }
@@ -166,7 +166,7 @@
                 LoadingManager.hide();
                 
                 ToastManager.success('Map created!');
-                Navigation.toEditor(result.id);
+                window.location.href = `/parkoreen/host.html?map=${result.id}`;
             } catch (error) {
                 LoadingManager.hide();
                 ToastManager.error('Failed to create map: ' + error.message);
@@ -174,7 +174,7 @@
         }
 
         function hostMap(mapId) {
-            window.location.href = `/host.html?map=${mapId}&mode=host`;
+            window.location.href = `/parkoreen/host.html?map=${mapId}&mode=host`;
         }
 
         function editMap(mapId) {

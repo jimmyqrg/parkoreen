@@ -5,29 +5,29 @@
 
 const CACHE_NAME = 'parkoreen-v1';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/dashboard/',
-    '/dashboard/index.html',
-    '/join.html',
-    '/host.html',
-    '/settings/',
-    '/settings/index.html',
-    '/login/',
-    '/login/index.html',
-    '/signup/',
-    '/signup/index.html',
-    '/assets/css/style.css',
-    '/assets/js/game.js',
-    '/assets/js/editor.js',
-    '/assets/js/style.js',
-    '/assets/js/exportImport.js',
-    '/runtime.js',
-    '/assets/mp3/jump.mp3',
-    '/assets/png/bg_sky.png',
-    '/assets/png/bg_galaxy.png',
-    '/assets/ttf/jersey10.ttf',
-    '/manifest.json'
+    '/parkoreen/',
+    '/parkoreen/index.html',
+    '/parkoreen/dashboard/',
+    '/parkoreen/dashboard/index.html',
+    '/parkoreen/join.html',
+    '/parkoreen/host.html',
+    '/parkoreen/settings/',
+    '/parkoreen/settings/index.html',
+    '/parkoreen/login/',
+    '/parkoreen/login/index.html',
+    '/parkoreen/signup/',
+    '/parkoreen/signup/index.html',
+    '/parkoreen/assets/css/style.css',
+    '/parkoreen/assets/js/game.js',
+    '/parkoreen/assets/js/editor.js',
+    '/parkoreen/assets/js/style.js',
+    '/parkoreen/assets/js/exportImport.js',
+    '/parkoreen/runtime.js',
+    '/parkoreen/assets/mp3/jump.mp3',
+    '/parkoreen/assets/png/bg_sky.png',
+    '/parkoreen/assets/png/bg_galaxy.png',
+    '/parkoreen/assets/ttf/jersey10.ttf',
+    '/parkoreen/manifest.json'
 ];
 
 // Install event - cache assets
@@ -126,7 +126,7 @@ self.addEventListener('fetch', (event) => {
                         // Network failed and no cache
                         // Return offline page for navigation requests
                         if (event.request.mode === 'navigate') {
-                            return caches.match('/dashboard/');
+                            return caches.match('/parkoreen/dashboard/');
                         }
                         return new Response('Offline', { status: 503 });
                     });
@@ -165,9 +165,9 @@ self.addEventListener('push', (event) => {
     
     const options = {
         body: data.body || 'New notification from Parkoreen',
-        icon: '/assets/png/icon-192.png',
-        badge: '/assets/png/icon-192.png',
-        data: data.url || '/'
+        icon: '/parkoreen/assets/png/icon-192.png',
+        badge: '/parkoreen/assets/png/icon-192.png',
+        data: data.url || '/parkoreen/'
     };
 
     event.waitUntil(

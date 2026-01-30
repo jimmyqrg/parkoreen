@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Join a Parkoreen game">
     <title>Join Game - Parkoreen</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/parkoreen/manifest.json">
     <meta name="theme-color" content="#2d5a27">
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/parkoreen/assets/css/style.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
 </head>
 <body>
@@ -52,8 +52,8 @@
     </footer>
 
     <!-- Scripts -->
-    <script src="/runtime.js"></script>
-    <script src="/assets/js/style.js"></script>
+    <script src="/parkoreen/runtime.js"></script>
+    <script src="/parkoreen/assets/js/style.js"></script>
     <script>
         let needsPassword = false;
 
@@ -107,7 +107,7 @@
                             mapData: data.mapData,
                             isHost: false
                         }));
-                        window.location.href = `/host.html?room=${data.roomCode}&mode=play`;
+                        window.location.href = `/parkoreen/host.html?room=${data.roomCode}&mode=play`;
                     });
 
                     MultiplayerManager.on('error', (data) => {
