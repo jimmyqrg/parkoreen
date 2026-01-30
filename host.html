@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Parkoreen - Map Editor & Game">
+    <title>Parkoreen</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2d5a27">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" rel="stylesheet">
+    <style>
+        /* Page-specific styles */
+        body.game-active {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="game-active">
+    <!-- Game Container -->
+    <div id="game-container">
+        <div class="game-bg sky"></div>
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- Game HUD (visible during play mode) -->
+    <div class="game-hud hidden" id="game-hud">
+        <!-- Leave button -->
+        <button class="hud-btn" id="hud-leave" style="position: fixed; top: 16px; left: 16px; transform: scaleX(-1);">
+            <span class="material-symbols-outlined">logout</span>
+        </button>
+        
+        <!-- Settings button -->
+        <button class="hud-btn" id="hud-settings" style="position: fixed; top: 16px; right: 16px;">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+        
+        <!-- Chat button -->
+        <button class="hud-btn" id="hud-chat" style="position: fixed; bottom: 16px; left: 16px;">
+            <span class="material-symbols-outlined">chat</span>
+        </button>
+        
+        <!-- Players button -->
+        <button class="hud-btn" id="hud-players" style="position: fixed; bottom: 16px; right: 16px;">
+            <span class="material-symbols-outlined">group</span>
+        </button>
+        
+        <!-- Room code display -->
+        <div id="room-code-display" class="hidden" style="position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 8px; font-family: monospace; font-size: 1.25rem; letter-spacing: 4px;"></div>
+    </div>
+
+    <!-- Players Panel -->
+    <div class="players-panel" id="players-panel">
+        <div class="panel-header">
+            <span class="panel-title">Players</span>
+            <button class="btn btn-icon btn-ghost" id="close-players-panel">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="panel-body" id="players-list">
+            <!-- Players will be listed here -->
+        </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chat-panel">
+        <div class="chat-messages" id="chat-messages">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chat-input" placeholder="Type a message..." maxlength="200">
+            <button class="chat-send" id="chat-send">
+                <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/runtime.js"></script>
+    <script src="/assets/js/style.js"></script>
+    <script src="/assets/js/game.js"></script>
+    <script src="/assets/js/editor.js"></script>
+    <script src="/assets/js/exportImport.js"></script>
+    <script>
+        // Global state
+        let engine;
+        let editor;
+        let currentMapId = null;
+        let currentMode = 'edit'; // 'edit', 'host', 'play'
+        let isHost = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check auth
+            if (!Auth.requireAuth()) return;
+
+            // Parse URL params
+            const params = new URLSearchParams(window.location.search);
+            currentMapId = params.get('map');
+            currentMode = params.get('mode') || 'edit';
+            const roomCode = params.get('room');
+
+            // Initialize game engine
+            engine = new GameEngine('game-canvas');
+            engine.start();
+
+            // Initialize editor
+            editor = new Editor(engine);
+            editor.initUI();
+            editor.updateBackground();
+
+            // Load map or game data
+            if (currentMode === 'play' && roomCode) {
+                // Join existing game
+                await initializePlayMode(roomCode);
+            } else if (currentMapId) {
+                // Load map for editing or hosting
+                await loadMap(currentMapId);
+                
+                if (currentMode === 'host') {
+                    // Show host dialog after loading
+                    setTimeout(() => {
+                        document.getElementById('btn-config').click();
+                    }, 500);
+                }
+            } else {
+                // New map
+                engine.world.mapName = 'New Map';
+            }
+
+            // Setup event handlers
+            setupGameHUD();
+            setupMultiplayer();
+        });
+
+        async function loadMap(mapId) {
+            try {
+                LoadingManager.show('Loading map...');
+                const mapData = await MapManager.getMap(mapId);
+                
+                if (mapData.data) {
+                    engine.world.fromJSON(mapData.data);
+                }
+                engine.world.mapName = mapData.name || 'Untitled Map';
+                
+                editor.updateBackground();
+                LoadingManager.hide();
+                
+                ToastManager.success('Map loaded!');
+            } catch (error) {
+                LoadingManager.hide();
+                ToastManager.error('Failed to load map: ' + error.message);
+            }
+        }
+
+        async function saveMap() {
+            if (!currentMapId) {
+                ToastManager.error('No map to save');
+                return;
+            }
+
+            try {
+                const data = engine.world.toJSON();
+                await MapManager.saveMap(currentMapId, { data });
+                ToastManager.success('Map saved!');
+            } catch (error) {
+                ToastManager.error('Failed to save map: ' + error.message);
+            }
+        }
+
+        async function initializePlayMode(roomCode) {
+            const gameData = sessionStorage.getItem('parkoreen_game');
+            if (gameData) {
+                const data = JSON.parse(gameData);
+                if (data.mapData) {
+                    engine.world.fromJSON(data.mapData);
+                }
+                isHost = data.isHost || false;
+            }
+
+            // Hide editor UI
+            document.getElementById('editor-ui')?.classList.add('hidden');
+            document.getElementById('toolbar')?.classList.add('hidden');
+
+            // Show game HUD
+            document.getElementById('game-hud').classList.remove('hidden');
+            
+            // Show room code
+            if (roomCode) {
+                const roomCodeDisplay = document.getElementById('room-code-display');
+                roomCodeDisplay.textContent = roomCode;
+                roomCodeDisplay.classList.remove('hidden');
+            }
+
+            // Start game
+            const user = Auth.getUser();
+            engine.startGame(user.name, null);
+
+            // Setup touch controls if enabled
+            if (Settings.get('touchscreenMode')) {
+                editor.updateTouchControls();
+            }
+        }
+
+        function setupGameHUD() {
+            // Leave button
+            document.getElementById('hud-leave').addEventListener('click', async () => {
+                if (isHost) {
+                    const confirmed = await ModalManager.confirm(
+                        'Leave Room',
+                        'Are you sure you want to kick everybody in the room?'
+                    );
+                    
+                    if (confirmed) {
+                        MultiplayerManager.leaveRoom();
+                        Navigation.toDashboard();
+                    }
+                } else {
+                    MultiplayerManager.leaveRoom();
+                    Navigation.toDashboard();
+                }
+            });
+
+            // Settings button
+            document.getElementById('hud-settings').addEventListener('click', () => {
+                document.getElementById('settings-panel')?.classList.toggle('hidden');
+            });
+
+            // Chat button
+            document.getElementById('hud-chat').addEventListener('click', () => {
+                document.getElementById('chat-panel').classList.toggle('active');
+            });
+
+            // Players button
+            document.getElementById('hud-players').addEventListener('click', () => {
+                document.getElementById('players-panel').classList.toggle('active');
+                updatePlayersList();
+            });
+
+            // Close panels
+            document.getElementById('close-players-panel').addEventListener('click', () => {
+                document.getElementById('players-panel').classList.remove('active');
+            });
+
+            // Chat send
+            document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+            document.getElementById('chat-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                MultiplayerManager.sendChatMessage(message);
+                input.value = '';
+            }
+        }
+
+        function addChatMessage(name, message, color) {
+            const container = document.getElementById('chat-messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'chat-message';
+            messageEl.innerHTML = `
+                <span class="chat-message-name" style="color: ${color || '#fff'};">${escapeHtml(name)}:</span>
+                <span>${escapeHtml(message)}</span>
+            `;
+            container.appendChild(messageEl);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updatePlayersList() {
+            const container = document.getElementById('players-list');
+            const players = MultiplayerManager.getPlayers();
+            
+            container.innerHTML = '';
+            
+            players.forEach(player => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <div class="player-color" style="background: ${player.color}"></div>
+                    <span class="player-name">${escapeHtml(player.name)}</span>
+                    ${isHost ? `
+                        <button class="layer-btn" data-kick="${player.id}" title="Kick Player">
+                            <span class="material-symbols-outlined">person_remove</span>
+                        </button>
+                    ` : ''}
+                `;
+
+                if (isHost) {
+                    item.querySelector('[data-kick]')?.addEventListener('click', () => {
+                        MultiplayerManager.kickPlayer(player.id);
+                    });
+                }
+
+                container.appendChild(item);
+            });
+        }
+
+        function setupMultiplayer() {
+            // Player joined
+            MultiplayerManager.on('playerJoined', (data) => {
+                engine.addRemotePlayer(data.playerId, data.playerName, data.playerColor, 0, 0);
+                addChatMessage('System', `${data.playerName} joined the parky!`, '#4CAF50');
+                updatePlayersList();
+            });
+
+            // Player left
+            MultiplayerManager.on('playerLeft', (data) => {
+                engine.removeRemotePlayer(data.playerId);
+                addChatMessage('System', `${data.playerName} left the parky.`, '#f44336');
+                updatePlayersList();
+            });
+
+            // Player position update
+            MultiplayerManager.on('playerPosition', (data) => {
+                engine.updateRemotePlayer(data.playerId, data.x, data.y);
+            });
+
+            // Chat message
+            MultiplayerManager.on('chatMessage', (data) => {
+                addChatMessage(data.playerName, data.message, data.playerColor);
+            });
+
+            // Kicked
+            MultiplayerManager.on('kicked', async () => {
+                await ModalManager.alert('You Are Kicked!', "Looks like the host doesn't want you to be in here anymore :(");
+                Navigation.toDashboard();
+            });
+
+            // Room closed
+            MultiplayerManager.on('roomClosed', async () => {
+                await ModalManager.alert('Uh Oh', 'The host has left the parky :(');
+                Navigation.toDashboard();
+            });
+
+            // Game end
+            MultiplayerManager.on('gameEnd', (data) => {
+                ModalManager.alert('Game Over!', `${data.winnerName} has reached the finish line!`);
+            });
+
+            // Send position updates
+            if (engine.state === GameState.PLAYING) {
+                setInterval(() => {
+                    if (engine.localPlayer) {
+                        MultiplayerManager.sendPosition(engine.localPlayer.x, engine.localPlayer.y);
+                    }
+                }, 50); // 20 updates per second
+            }
+        }
+
+        // Override editor's host game function
+        if (typeof Editor !== 'undefined') {
+            const originalHostGame = Editor.prototype.hostGame;
+            Editor.prototype.hostGame = async function() {
+                // Validate
+                if (!this.world.spawnPoint) {
+                    this.showToast('Please add a spawn point first!', 'error');
+                    return;
+                }
+
+                const usePassword = document.getElementById('config-use-password').checked;
+                const password = document.getElementById('config-password').value;
+
+                if (usePassword && !password) {
+                    this.showToast('Please enter a password or disable password protection.', 'error');
+                    return;
+                }
+
+                try {
+                    LoadingManager.show('Creating room...');
+
+                    // Save map first
+                    if (currentMapId) {
+                        await saveMap();
+                    }
+
+                    // Setup multiplayer handlers
+                    MultiplayerManager.on('roomCreated', (data) => {
+                        LoadingManager.hide();
+                        
+                        // Store game data
+                        sessionStorage.setItem('parkoreen_game', JSON.stringify({
+                            roomCode: data.roomCode,
+                            mapData: this.world.toJSON(),
+                            isHost: true
+                        }));
+
+                        // Redirect to play mode
+                        window.location.href = `/host.html?room=${data.roomCode}&mode=play`;
+                    });
+
+                    MultiplayerManager.on('error', (data) => {
+                        LoadingManager.hide();
+                        this.showToast(data.message, 'error');
+                    });
+
+                    // Host the game
+                    await MultiplayerManager.hostGame({
+                        mapData: this.world.toJSON(),
+                        maxPlayers: parseInt(document.getElementById('config-max-players').value) || 10,
+                        usePassword: usePassword,
+                        password: password
+                    });
+                } catch (error) {
+                    LoadingManager.hide();
+                    this.showToast('Failed to host game: ' + error.message, 'error');
+                }
+            };
+        }
+
+        // Auto-save periodically for editor mode
+        if (currentMode === 'edit' && currentMapId) {
+            setInterval(async () => {
+                if (engine.state === GameState.EDITOR) {
+                    await saveMap();
+                }
+            }, 60000); // Auto-save every minute
+        }
+
+        // Save on page unload
+        window.addEventListener('beforeunload', () => {
+            if (currentMode === 'edit' && currentMapId && engine.state === GameState.EDITOR) {
+                // Attempt to save (may not complete)
+                const data = engine.world.toJSON();
+                navigator.sendBeacon(`${API_URL}/maps/${currentMapId}`, JSON.stringify({ data }));
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

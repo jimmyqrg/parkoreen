@@ -1,0 +1,46 @@
+# PARKOREEN - Cloudflare Worker Configuration
+# Deploy with: wrangler deploy
+
+name = "parkoreen"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# KV Namespace bindings - create these in the Cloudflare dashboard
+# Run: wrangler kv:namespace create "USERS"
+# Run: wrangler kv:namespace create "MAPS"
+# Run: wrangler kv:namespace create "SESSIONS"
+# Run: wrangler kv:namespace create "ROOMS"
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "your-users-kv-id-here"
+
+[[kv_namespaces]]
+binding = "MAPS"
+id = "your-maps-kv-id-here"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "your-sessions-kv-id-here"
+
+[[kv_namespaces]]
+binding = "ROOMS"
+id = "your-rooms-kv-id-here"
+
+# Durable Objects for real-time multiplayer
+[[durable_objects.bindings]]
+name = "GAME_ROOMS"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["GameRoom"]
+
+# Environment variables (set in Cloudflare dashboard for production)
+[vars]
+ENVIRONMENT = "development"
+
+# Custom domain routing (optional)
+# routes = [
+#   { pattern = "parkoreen.example.com/*", zone_name = "example.com" }
+# ]

@@ -1,0 +1,26 @@
+{
+    "name": "Parkoreen",
+    "short_name": "Parkoreen",
+    "description": "A multiplayer parkour game - build your own map and get it featured!",
+    "start_url": "/dashboard/",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "background_color": "#1a1a2e",
+    "theme_color": "#2d5a27",
+    "icons": [
+        {
+            "src": "/assets/png/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/assets/png/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "categories": ["games", "entertainment"],
+    "lang": "en",
+    "scope": "/",
+    "id": "parkoreen-game"
+}
